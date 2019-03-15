@@ -1,5 +1,14 @@
 import { Juizo } from './Juizo';
-import { range, showPorcentagem, parsePorcentagem } from './utils';
+import { sequence1Objs, transpose } from './sequence';
+import {
+	calcularMediaCom,
+	calcularVariacaoCom,
+	calcularVariacoesCom,
+	parsePorcentagem,
+	range,
+	showPorcentagem,
+	sum,
+} from './utils';
 
 const JUIZOS = 8;
 const MESES = 6;
@@ -10,6 +19,7 @@ const juizos = range(JUIZOS)
 	.map((juizo, i) => ((juizo.sigla = `Juízo ${String.fromCharCode(65 + i)}`), juizo));
 const mandou = juizos.map(() => true);
 const contadores = juizos.map(() => 0);
+/** @type {Distribuicao[][]} */
 const distribuicoes = range(MESES).map(mes => {
 	const contadoresOriginal = contadores.slice();
 	const aDistribuir = juizos.map(x => x.definirQtdDistribuicao());
@@ -60,14 +70,21 @@ const distribuicoes = range(MESES).map(mes => {
 	ajustados.forEach((processos, i) => {
 		contadores[i] += processos - media;
 	});
+	const informacoes = {
+		'contador antes': contadoresOriginal,
+		'a distribuir': aDistribuirOriginal,
+		distribuidos,
+		recebidos,
+		remetidos,
+		ajustados,
+		'contador depois': contadores,
+	};
 	return juizos.map((juizo, i) => ({
-		sigla: juizo.sigla,
-		'contador antes': contadoresOriginal[i],
-		'a distribuir': aDistribuirOriginal[i],
-		distribuidos: distribuidos[i],
-		redistribuidos: recebidos[i] - remetidos[i],
-		ajustados: ajustados[i],
-		'contador depois': contadores[i],
+		juizo,
+		...Object.keys(informacoes).reduce(
+			(acc, key) => Object.assign(acc, { [key]: informacoes[key][i] }),
+			{},
+		),
 	}));
 });
 
@@ -78,52 +95,48 @@ distribuicoes.forEach((d, i) => {
 		mes = `0${mes}`;
 	}
 	console.log(`${mes}/${dt.getFullYear()}`);
-	console.table(d.reduce((acc, { sigla, ...resto }) => Object.assign(acc, { [sigla]: resto }), {}));
+	console.table(
+		d.reduce((acc, { juizo, ...resto }) => Object.assign(acc, { [juizo.sigla]: resto }), {}),
+	);
 });
 console.log('Resumo');
-let resumo = distribuicoes
-	.reduce(
-		(acc, mes) =>
-			mes.reduce((acc2, { ajustados }, j) => {
-				acc2[j].ajustados += ajustados;
-				return acc2;
-			}, acc),
-		juizos.map(j => ({ sigla: j.sigla, ajustados: 0 })),
-	)
-	.map(({ sigla, ajustados }) => ({
-		sigla,
-		ajustados,
-		'processos por mês': Math.round((ajustados / distribuicoes.length) * 100) / 100,
+const tendencias = calcularVariacoesCom(juizos, x => x.media);
+const resumo0 = transpose(distribuicoes)
+	.map(sequence1Objs)
+	.map(({ juizo, distribuidos, recebidos, remetidos, ajustados }, i) => ({
+		juizo: juizo[0],
+		tendencia: tendencias[i],
+		distribuidos: sum(distribuidos),
+		redistribuidos: sum(recebidos) - sum(remetidos),
+		ajustados: sum(ajustados),
 	}));
-const mediaResumo = resumo.reduce((acc, { ajustados }) => acc + ajustados, 0) / resumo.length;
-const mediaTendencia = juizos.reduce((acc, x) => acc + x.media, 0) / juizos.length;
-resumo = resumo
-	.map(({ sigla, ajustados, ...resto }, i) => ({
-	sigla,
-		tendencia: juizos[i].media / mediaTendencia - 1,
-	ajustados,
-	...resto,
-		variancia: ajustados / mediaResumo - 1,
-	}))
-	.map(({ tendencia, variancia, ...resto }) => ({
+const variacoes = calcularVariacoesCom(resumo0, x => x.ajustados);
+const resumo = resumo0
+	.map(({ juizo, tendencia, ...resto }, i) => ({
+		juizo,
 		tendencia,
-		variancia,
-		amortizacao: variancia / tendencia - 1,
 		...resto,
+		variacao: variacoes[i],
+		amortizacao: variacoes[i] / tendencia - 1,
 	}))
-	.map(({ tendencia, variancia, amortizacao, ...resto }) => ({
+	.map(({ juizo, tendencia, variacao, amortizacao, distribuidos, redistribuidos, ajustados }) => ({
+		sigla: juizo.sigla,
 		tendencia: showPorcentagem(tendencia),
-		...resto,
-		variancia: showPorcentagem(variancia),
+		distribuidos,
+		redistribuidos,
+		ajustados,
+		variacao: showPorcentagem(variacao),
 		amortizacao: showPorcentagem(amortizacao),
 }));
 console.table(
 	resumo.reduce((acc, { sigla, ...resto }) => Object.assign(acc, { [sigla]: resto }), {}),
 );
+console.log('Variação tendência', showPorcentagem(calcularVariacaoCom(juizos, x => x.media), true));
+console.log(
+	'Variação ajustados',
+	showPorcentagem(calcularVariacaoCom(resumo0, x => x.ajustados), true),
+);
 console.log(
 	'Média amortização',
-	showPorcentagem(
-		Object.keys(resumo).reduce((acc, key) => acc + parsePorcentagem(resumo[key].amortizacao), 0) /
-			resumo.length,
-	),
+	showPorcentagem(calcularMediaCom(resumo, x => parsePorcentagem(x.amortizacao))),
 );

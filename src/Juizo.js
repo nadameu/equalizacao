@@ -2,6 +2,9 @@ const MEDIA_GERAL = 200;
 const VARIANCIA_GERAL = 100;
 
 export class Juizo {
+	/**
+	 * @param {string} sigla
+	 */
 	constructor(sigla) {
 		this.sigla = sigla;
 		this.media = MEDIA_GERAL - VARIANCIA_GERAL / 2 + Math.random() * VARIANCIA_GERAL;
@@ -11,5 +14,9 @@ export class Juizo {
 
 	definirQtdDistribuicao() {
 		return Math.round(this.media - this.variancia / 2 + Math.random() * this.variancia);
+	}
+
+	toString() {
+		return this.sigla;
 	}
 }
