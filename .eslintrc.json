@@ -17,6 +17,7 @@
 	"plugins": ["prettier"],
 	"rules": {
 		"no-console": "off",
+		"no-unused-vars": "warn",
 		"no-var": "warn",
 		"prefer-const": "warn"
 	}

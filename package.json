@@ -24,9 +24,12 @@
 		"eslint-plugin-prettier": "^3.0.1",
 		"prettier": "^1.16.4",
 		"rollup": "^1.6.0",
-		"rollup-plugin-babel": "^4.3.2"
+		"rollup-plugin-babel": "^4.3.2",
+		"rollup-plugin-node-resolve": "^4.0.1"
 	},
 	"dependencies": {
-		"@babel/polyfill": "^7.2.5"
+		"@babel/polyfill": "^7.2.5",
+		"brain.js": "^1.6.1",
+		"synaptic": "^1.1.4"
 	}
 }
