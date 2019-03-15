@@ -1,21 +1,17 @@
 import { Juizo } from './Juizo';
-const range = length => Array.from({ length }, (_, i) => i);
+import { range, showPorcentagem, parsePorcentagem } from './utils';
 
-const juizos = [
-	'SCCRI03',
-	'SCLAG02',
-	'SCLGA01',
-	'SCFLP05',
-	'SCFLP08',
-	'SCTUB02',
-	'SCCAC01',
-	'SCJOA01',
-]
-	.sort()
-	.map(sigla => new Juizo(sigla));
+const JUIZOS = 8;
+const MESES = 6;
+
+const juizos = range(JUIZOS)
+	.map(() => new Juizo(''))
+	.sort((a, b) => b.media - a.media)
+	.map((juizo, i) => ((juizo.sigla = `Juízo ${String.fromCharCode(65 + i)}`), juizo));
 const mandou = juizos.map(() => true);
 const contadores = juizos.map(() => 0);
-const distribuicoes = range(13).map(mes => {
+const distribuicoes = range(MESES).map(mes => {
+	const contadoresOriginal = contadores.slice();
 	const aDistribuir = juizos.map(x => x.definirQtdDistribuicao());
 	const aDistribuirOriginal = aDistribuir.slice();
 	const distribuidos = juizos.map(() => 0);
@@ -66,11 +62,12 @@ const distribuicoes = range(13).map(mes => {
 	});
 	return juizos.map((juizo, i) => ({
 		sigla: juizo.sigla,
+		'contador antes': contadoresOriginal[i],
 		'a distribuir': aDistribuirOriginal[i],
 		distribuidos: distribuidos[i],
 		redistribuidos: recebidos[i] - remetidos[i],
 		ajustados: ajustados[i],
-		contador: contadores[i],
+		'contador depois': contadores[i],
 	}));
 });
 
@@ -100,19 +97,33 @@ let resumo = distribuicoes
 	}));
 const mediaResumo = resumo.reduce((acc, { ajustados }) => acc + ajustados, 0) / resumo.length;
 const mediaTendencia = juizos.reduce((acc, x) => acc + x.media, 0) / juizos.length;
-resumo = resumo.map(({ sigla, ajustados, ...resto }, i) => ({
+resumo = resumo
+	.map(({ sigla, ajustados, ...resto }, i) => ({
 	sigla,
-	tendencia: `${juizos[i].media >= mediaTendencia ? '+' : ''}${Math.round(
-		(juizos[i].media / mediaTendencia - 1) * 10000,
-	) / 100}%`,
+		tendencia: juizos[i].media / mediaTendencia - 1,
 	ajustados,
 	...resto,
-	variancia: `${ajustados >= mediaResumo ? '+' : ''}${Math.round(
-		(ajustados / mediaResumo - 1) * 10000,
-	) / 100}%`,
+		variancia: ajustados / mediaResumo - 1,
+	}))
+	.map(({ tendencia, variancia, ...resto }) => ({
+		tendencia,
+		variancia,
+		amortizacao: variancia / tendencia - 1,
+		...resto,
+	}))
+	.map(({ tendencia, variancia, amortizacao, ...resto }) => ({
+		tendencia: showPorcentagem(tendencia),
+		...resto,
+		variancia: showPorcentagem(variancia),
+		amortizacao: showPorcentagem(amortizacao),
 }));
 console.table(
-	resumo
-		.sort((a, b) => a.ajustados - b.ajustados)
-		.reduce((acc, { sigla, ...resto }) => Object.assign(acc, { [sigla]: resto }), {}),
+	resumo.reduce((acc, { sigla, ...resto }) => Object.assign(acc, { [sigla]: resto }), {}),
+);
+console.log(
+	'Média amortização',
+	showPorcentagem(
+		Object.keys(resumo).reduce((acc, key) => acc + parsePorcentagem(resumo[key].amortizacao), 0) /
+			resumo.length,
+	),
 );
