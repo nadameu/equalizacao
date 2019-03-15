@@ -3,5 +3,5 @@
 	"eslint.autoFixOnSave": true,
 	"eslint.enable": true,
 	"prettier.eslintIntegration": true,
-	"javascript.validate.enable": false
+	"eslint.validate": ["javascript"]
 }
