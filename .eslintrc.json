@@ -19,6 +19,8 @@
 		"no-console": "off",
 		"no-unused-vars": "warn",
 		"no-var": "warn",
-		"prefer-const": "warn"
+		"prefer-const": "warn",
+		"arrow-body-style": ["warn", "as-needed"],
+		"object-shorthand": "warn"
 	}
 }
