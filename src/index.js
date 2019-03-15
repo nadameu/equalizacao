@@ -15,7 +15,7 @@ const juizos = [
 	.map(sigla => new Juizo(sigla));
 const mandou = juizos.map(() => true);
 const contadores = juizos.map(() => 0);
-const distribuicoes = range(12).map(mes => {
+const distribuicoes = range(13).map(mes => {
 	const aDistribuir = juizos.map(x => x.definirQtdDistribuicao());
 	const aDistribuirOriginal = aDistribuir.slice();
 	const distribuidos = juizos.map(() => 0);
@@ -99,8 +99,12 @@ let resumo = distribuicoes
 		'processos por mês': Math.round((ajustados / distribuicoes.length) * 100) / 100,
 	}));
 const mediaResumo = resumo.reduce((acc, { ajustados }) => acc + ajustados, 0) / resumo.length;
-resumo = resumo.map(({ sigla, ajustados, ...resto }) => ({
+const mediaTendencia = juizos.reduce((acc, x) => acc + x.media, 0) / juizos.length;
+resumo = resumo.map(({ sigla, ajustados, ...resto }, i) => ({
 	sigla,
+	tendencia: `${juizos[i].media >= mediaTendencia ? '+' : ''}${Math.round(
+		(juizos[i].media / mediaTendencia - 1) * 10000,
+	) / 100}%`,
 	ajustados,
 	...resto,
 	variancia: `${ajustados >= mediaResumo ? '+' : ''}${Math.round(
@@ -108,5 +112,7 @@ resumo = resumo.map(({ sigla, ajustados, ...resto }) => ({
 	) / 100}%`,
 }));
 console.table(
-	resumo.reduce((acc, { sigla, ...resto }) => Object.assign(acc, { [sigla]: resto }), {}),
+	resumo
+		.sort((a, b) => a.ajustados - b.ajustados)
+		.reduce((acc, { sigla, ...resto }) => Object.assign(acc, { [sigla]: resto }), {}),
 );
