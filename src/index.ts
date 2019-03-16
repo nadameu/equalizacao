@@ -39,7 +39,7 @@ const distribuicoes = range(MESES).map(mes => {
 			} else {
 				// Talvez mandar para outro Juízo
 				const juizosAptosAReceber = contadores.reduce<number[]>(
-					(acc, x, i) => (i !== distribuirPara && x < 0 ? acc.concat([i]) : acc),
+					(acc, x, i) => (x < 0 ? acc.concat([i]) : acc),
 					[],
 				);
 				if (juizosAptosAReceber.length > 0) {
