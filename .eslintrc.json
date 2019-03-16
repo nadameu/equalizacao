@@ -4,23 +4,27 @@
 		"es6": true,
 		"node": true
 	},
-	"extends": ["eslint:recommended"],
-	"globals": {
-		"Atomics": "readonly",
-		"SharedArrayBuffer": "readonly"
-	},
-	"parser": "babel-eslint",
+	"extends": [
+		"eslint:recommended",
+		"plugin:@typescript-eslint/recommended",
+		"prettier",
+		"prettier/@typescript-eslint"
+	],
+	"parser": "@typescript-eslint/parser",
 	"parserOptions": {
-		"ecmaVersion": 2018,
-		"sourceType": "module"
+		"project": "./tsconfig.json"
 	},
-	"plugins": ["prettier"],
+	"plugins": ["@typescript-eslint"],
 	"rules": {
 		"no-console": "off",
 		"no-unused-vars": "warn",
 		"no-var": "warn",
 		"prefer-const": "warn",
 		"arrow-body-style": ["warn", "as-needed"],
-		"object-shorthand": "warn"
+		"object-shorthand": "warn",
+		"@typescript-eslint/explicit-function-return-type": "off",
+		"@typescript-eslint/explicit-member-accessibility": "off",
+		"@typescript-eslint/no-explicit-any": "off",
+		"@typescript-eslint/no-parameter-properties": "off"
 	}
 }

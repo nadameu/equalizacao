@@ -1,5 +1,6 @@
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const pkg = require('./package.json');
-import babel from 'rollup-plugin-babel';
+import typescript from 'rollup-plugin-typescript';
 
 export default {
 	input: pkg.main,
@@ -8,9 +9,5 @@ export default {
 		file: 'dist/bundle.js',
 	},
 	external: ['brain.js'],
-	plugins: [
-		babel({
-			exclude: 'node_modules/**',
-		}),
-	],
+	plugins: [typescript()],
 };

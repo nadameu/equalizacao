@@ -1,8 +1,0 @@
-{
-	"presets": [["@babel/env", { "useBuiltIns": "entry" }]],
-	"plugins": [
-		["@babel/plugin-proposal-function-bind"],
-		["@babel/plugin-proposal-optional-chaining"],
-		["@babel/plugin-proposal-pipeline-operator", { "proposal": "minimal" }]
-	]
-}
