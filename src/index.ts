@@ -19,7 +19,6 @@ const juizos = range(JUIZOS)
 	.map((juizo, i) => ((juizo.sigla = `Juízo ${String.fromCharCode(65 + i)}`), juizo));
 const mandou = juizos.map(() => true);
 const contadores = juizos.map(() => 0);
-/** @type {Distribuicao[][]} */
 const distribuicoes = range(MESES).map(mes => {
 	const contadoresOriginal = contadores.slice();
 	const aDistribuir = juizos.map(x => x.definirQtdDistribuicao());
@@ -30,33 +29,31 @@ const distribuicoes = range(MESES).map(mes => {
 	while (aDistribuir.some(processos => processos > 0)) {
 		const distribuirPara = Math.floor(aDistribuir.length * Math.random());
 		if (aDistribuir[distribuirPara] === 0) continue; // Não tem mais iniciais
-		let redistribuir = false;
-		let redistribuirPara = undefined;
+		let redistribuirPara: null | number = null;
 		if (contadores[distribuirPara] > 0) {
 			// Tem crédito do mês anterior
 			if (mandou[distribuirPara]) {
 				// Última inicial foi redistribuída
-				redistribuir = false;
+				redistribuirPara = null;
 				mandou[distribuirPara] = false; // Zera para que a próxima possa ser redistribuída
 			} else {
 				// Talvez mandar para outro Juízo
-				const juizosAptosAReceber = contadores.reduce(
+				const juizosAptosAReceber = contadores.reduce<number[]>(
 					(acc, x, i) => (i !== distribuirPara && x < 0 ? acc.concat([i]) : acc),
 					[],
 				);
 				if (juizosAptosAReceber.length > 0) {
-					redistribuir = true;
 					redistribuirPara =
 						juizosAptosAReceber[Math.floor(juizosAptosAReceber.length * Math.random())];
 				} else {
-					redistribuir = false;
+					redistribuirPara = null;
 				}
 			}
 		}
 		distribuidos[distribuirPara]++;
 		aDistribuir[distribuirPara]--;
 		if (mes > 3) {
-			if (redistribuir) {
+			if (redistribuirPara !== null) {
 				contadores[distribuirPara]--;
 				remetidos[distribuirPara]++;
 				mandou[distribuirPara] = true;
@@ -81,10 +78,10 @@ const distribuicoes = range(MESES).map(mes => {
 	};
 	return juizos.map((juizo, i) => ({
 		juizo,
-		...Object.keys(informacoes).reduce(
-			(acc, key) => Object.assign(acc, { [key]: informacoes[key][i] }),
+		...(Object.keys(informacoes).reduce(
+			(acc, key) => Object.assign(acc, { [key]: informacoes[key as keyof typeof informacoes][i] }),
 			{},
-		),
+		) as { [k in keyof typeof informacoes]: (typeof informacoes)[k][number] }),
 	}));
 });
 
@@ -127,7 +124,7 @@ const resumo = resumo0
 		ajustados,
 		variacao: showPorcentagem(variacao),
 		amortizacao: showPorcentagem(amortizacao),
-}));
+	}));
 console.table(
 	resumo.reduce((acc, { sigla, ...resto }) => Object.assign(acc, { [sigla]: resto }), {}),
 );
