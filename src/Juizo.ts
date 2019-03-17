@@ -35,6 +35,8 @@ export class Juizo {
 	}
 
 	definirQtdDistribuicao() {
-		return Math.round(sortearDistNormal(this.media, this.desvio));
+		let num = -1;
+		while (num < 0) num = Math.round(sortearDistNormal(this.media, this.desvio));
+		return num;
 	}
 }
