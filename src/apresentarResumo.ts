@@ -1,13 +1,6 @@
-import { sequence1Objs, transpose } from './sequence';
-import {
-	calcularMediaCom,
-	calcularVariacaoCom,
-	calcularVariacoesCom,
-	parsePorcentagem,
-	showPorcentagem,
-	sum,
-} from './utils';
 import { Juizo } from './Juizo';
+import { sequence1Objs, transpose } from './sequence';
+import { calcularVariacaoCom, calcularVariacoesCom, showPorcentagem, sum } from './utils';
 
 export function apresentarResumo(juizos: Juizo[], distribuicoes: Distribuicao[][]) {
 	distribuicoes.forEach((d, i) => {
