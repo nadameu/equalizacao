@@ -1,4 +1,6 @@
-interface Distribuicao {
+import { Juizo } from "./Juizo";
+
+export interface Distribuicao {
 	'contador antes': number;
 	'a distribuir': number;
 	distribuidos: number;

@@ -1,11 +1,12 @@
+import { Distribuicao } from './Distribuicao';
 import { Juizo } from './Juizo';
-import { range } from './utils';
 import { sortearComPeso } from './sortearComPeso';
+import { calcularMedia, range } from './utils';
 
 export function algoritmoV3(juizos: Juizo[], meses: number) {
 	const mandou = juizos.map(() => true);
-	const contadores = juizos.map(() => 0);
-	const distribuicoes = range(meses).map(mes => {
+	let contadores = juizos.map(() => 0);
+	const distribuicoes: Distribuicao[][] = range(meses).map(mes => {
 		const contadoresOriginal = contadores.slice();
 		const aDistribuir = juizos.map(x => x.definirQtdDistribuicao());
 		const aDistribuirOriginal = aDistribuir.slice();
@@ -24,14 +25,9 @@ export function algoritmoV3(juizos: Juizo[], meses: number) {
 					mandou[distribuirPara] = false; // Zera para que a próxima possa ser redistribuída
 				} else {
 					// Talvez mandar para outro Juízo
-					const juizosAptosAReceber = contadores.reduce<number[]>(
-						(acc, x, i) => (x < 0 ? acc.concat([i]) : acc),
-						[],
-					);
-					if (juizosAptosAReceber.length > 0) {
-						redistribuirPara =
-							juizosAptosAReceber[Math.floor(juizosAptosAReceber.length * Math.random())];
-					} else {
+					try {
+						redistribuirPara = sortearComPeso(contadores.map(x => (x < 0 ? 1 : 0)));
+					} catch (_) {
 						redistribuirPara = null;
 					}
 				}
@@ -49,10 +45,8 @@ export function algoritmoV3(juizos: Juizo[], meses: number) {
 			}
 		}
 		const ajustados = juizos.map((_, i) => distribuidos[i] + recebidos[i] - remetidos[i]);
-		const media = Math.round(ajustados.reduce((acc, x) => acc + x, 0) / ajustados.length);
-		ajustados.forEach((processos, i) => {
-			contadores[i] += processos - media;
-		});
+		const media = calcularMedia(distribuidos);
+		contadores = contadores.map((contador, i) => contador + Math.round(distribuidos[i] - media));
 		const informacoes = {
 			'contador antes': contadoresOriginal,
 			'a distribuir': aDistribuirOriginal,
