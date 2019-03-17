@@ -15,12 +15,18 @@ export class Juizo {
 	sigla: string;
 	media: number;
 	desvio: number;
-	distribuicoes: Map<Date, number>;
+	distribuicoes: Map<number, number>;
 	constructor({
 		sigla = gerarSigla(),
 		media = gerarMedia(),
 		desvio = gerarDesvio(media),
-		distribuicoes = new Map<Date, number>(),
+		distribuicoes = new Map<number, number>(),
+	}: {
+		sigla?: string | undefined;
+		media?: number | undefined;
+		desvio?: number | undefined;
+		/** Primeiro número corresponde ao valor de .getTime() do mês, convertido para horas. */
+		distribuicoes?: Map<number, number> | undefined;
 	} = {}) {
 		this.sigla = sigla;
 		this.media = media;
