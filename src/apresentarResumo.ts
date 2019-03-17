@@ -7,6 +7,7 @@ import {
 	showPorcentagem,
 	sum,
 } from './utils';
+import { Juizo } from './Juizo';
 
 export function apresentarResumo(juizos: Juizo[], distribuicoes: Distribuicao[][]) {
 	distribuicoes.forEach((d, i) => {
