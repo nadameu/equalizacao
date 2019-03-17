@@ -1,5 +1,6 @@
 import { Juizo } from './Juizo';
 import { range } from './utils';
+import { sortearComPeso } from './sortearComPeso';
 
 export function algoritmoV3(juizos: Juizo[], meses: number) {
 	const mandou = juizos.map(() => true);
@@ -12,7 +13,7 @@ export function algoritmoV3(juizos: Juizo[], meses: number) {
 		const remetidos = juizos.map(() => 0);
 		const recebidos = juizos.map(() => 0);
 		while (aDistribuir.some(processos => processos > 0)) {
-			const distribuirPara = Math.floor(aDistribuir.length * Math.random());
+			const distribuirPara = sortearComPeso(aDistribuir);
 			if (aDistribuir[distribuirPara] === 0) continue; // Não tem mais iniciais
 			let redistribuirPara: null | number = null;
 			if (contadores[distribuirPara] > 0) {
