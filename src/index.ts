@@ -104,6 +104,8 @@ const resumo0 = transpose(distribuicoes)
 		juizo: juizo[0],
 		tendencia: tendencias[i],
 		distribuidos: sum(distribuidos),
+		recebidos: sum(recebidos),
+		remetidos: sum(remetidos),
 		redistribuidos: sum(recebidos) - sum(remetidos),
 		ajustados: sum(ajustados),
 	}));
@@ -116,15 +118,27 @@ const resumo = resumo0
 		variacao: variacoes[i],
 		amortizacao: variacoes[i] / tendencia - 1,
 	}))
-	.map(({ juizo, tendencia, variacao, amortizacao, distribuidos, redistribuidos, ajustados }) => ({
+	.map(
+		({
+			juizo,
+			tendencia,
+			variacao,
+			amortizacao,
+			distribuidos,
+			recebidos,
+			remetidos,
+			ajustados,
+		}) => ({
 		sigla: juizo.sigla,
 		tendencia: showPorcentagem(tendencia),
 		distribuidos,
-		redistribuidos,
+			recebidos,
+			remetidos,
 		ajustados,
 		variacao: showPorcentagem(variacao),
 		amortizacao: showPorcentagem(amortizacao),
-	}));
+		}),
+	);
 console.table(
 	resumo.reduce((acc, { sigla, ...resto }) => Object.assign(acc, { [sigla]: resto }), {}),
 );
