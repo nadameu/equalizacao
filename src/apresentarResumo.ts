@@ -67,16 +67,9 @@ export function apresentarResumo(juizos: Juizo[], distribuicoes: Distribuicao[][
 	console.table(
 		resumo.reduce((acc, { sigla, ...resto }) => Object.assign(acc, { [sigla]: resto }), {}),
 	);
-	console.log(
-		'Variação tendência',
-		showPorcentagem(calcularVariacaoCom(juizos, x => x.media), true),
-	);
-	console.log(
-		'Variação ajustados',
-		showPorcentagem(calcularVariacaoCom(resumo0, x => x.ajustados), true),
-	);
-	console.log(
-		'Média amortização',
-		showPorcentagem(calcularMediaCom(resumo, x => parsePorcentagem(x.amortizacao))),
-	);
+	const variacaoTendencia = calcularVariacaoCom(juizos, x => x.media);
+	console.log('Variação tendência', showPorcentagem(variacaoTendencia, true));
+	const variacaoAjustados = calcularVariacaoCom(resumo0, x => x.ajustados);
+	console.log('Variação ajustados', showPorcentagem(variacaoAjustados, true));
+	console.log('Amortização', showPorcentagem(variacaoAjustados / variacaoTendencia - 1));
 }
