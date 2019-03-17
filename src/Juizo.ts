@@ -22,11 +22,11 @@ export class Juizo {
 		desvio = gerarDesvio(media),
 		distribuicoes = new Map<number, number>(),
 	}: {
-		sigla?: string | undefined;
-		media?: number | undefined;
-		desvio?: number | undefined;
+		sigla?: string;
+		media?: number;
+		desvio?: number;
 		/** Primeiro número corresponde ao valor de .getTime() do mês, convertido para horas. */
-		distribuicoes?: Map<number, number> | undefined;
+		distribuicoes?: Map<number, number>;
 	} = {}) {
 		this.sigla = sigla;
 		this.media = media;
