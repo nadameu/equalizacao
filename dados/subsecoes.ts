@@ -23,6 +23,7 @@ import {
 	SCFLP06,
 	SCFLP07,
 	SCFLP08,
+	SCFLP09,
 	SCITA01,
 	SCITA02,
 	SCITA03,
@@ -44,7 +45,6 @@ import {
 	SCSMO01,
 	SCTUB01,
 	SCTUB02,
-	SCFLP09,
 } from './varas';
 
 export const SCFLP: Subsecao = {
