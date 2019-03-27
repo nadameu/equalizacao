@@ -8,5 +8,6 @@ export const sortearComPeso = (pesos: number[]): number => {
 		if (rand < peso) return i;
 		rand -= peso;
 	}
+	console.log(pesos);
 	throw new Error('Não foi possível sortear.');
 };

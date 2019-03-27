@@ -6,11 +6,24 @@ export const enum Competencia {
 	UNICA = 12,
 }
 
-export const isCriminal = (competencia: Competencia) =>
-	(competencia & Competencia.CRIMINAL) === Competencia.CRIMINAL;
-export const isExecucaoFiscal = (competencia: Competencia) =>
-	(competencia & Competencia.EXECUCAO_FISCAL) === Competencia.EXECUCAO_FISCAL;
-export const isPrevidenciaria = (competencia: Competencia) =>
-	(competencia & Competencia.PREVIDENCIARIA) === Competencia.PREVIDENCIARIA;
-export const isCivel = (competencia: Competencia) =>
-	(competencia & Competencia.CIVEL) === Competencia.CIVEL;
+export const possui = (esperado: Competencia) => (obtido: Competencia) =>
+	(obtido & esperado) === esperado;
+
+export const show = (competencia: Competencia): string => {
+	switch (competencia) {
+		case Competencia.CRIMINAL:
+			return 'CRIMINAL';
+
+		case Competencia.EXECUCAO_FISCAL:
+			return 'EXECUCAO_FISCAL';
+
+		case Competencia.PREVIDENCIARIA:
+			return 'PREVIDENCIARIA';
+
+		case Competencia.CIVEL:
+			return 'CIVEL';
+
+		case Competencia.UNICA:
+			return 'UNICA';
+	}
+};

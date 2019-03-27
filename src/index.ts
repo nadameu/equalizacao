@@ -1,19 +1,26 @@
-import { algoritmoV3 } from './algoritmoV3';
-import { apresentarResumo } from './apresentarResumo';
-import { Juizo } from './Juizo';
-import { range } from './utils';
+import * as fs from 'fs';
+import dados from '../dados/distribuicaoreal1718';
+import { fromDados } from './Ajuizamento';
+import { distribuicaoPorSorteio } from './distribuicaoPorSorteio';
+import { Distribuicao } from './Distribuicao';
 
-const JUIZOS = 8;
-const MESES = 6;
+function distValueToString(x: Distribuicao[keyof Distribuicao]): string {
+	if (typeof x === 'string') return `"${x}"`;
+	if (typeof x === 'number') return `${x}`;
+	return `"${x.sigla}"`;
+}
 
-const juizos = range(JUIZOS)
-	.map(() => new Juizo())
-	.sort((a, b) => b.media - a.media)
-	.map((juizo, i) => {
-		juizo.sigla = `Juízo ${String.fromCharCode(65 + i)}`;
-		return juizo;
-	});
-
-const distribuicoes = algoritmoV3(juizos, MESES);
-
-apresentarResumo(juizos, distribuicoes);
+const ajuizamentos = fromDados(dados);
+const distribuicoes = distribuicaoPorSorteio(ajuizamentos);
+fs.writeFileSync(
+	'result.csv',
+	['"Processo";"Mês";"Subseção";"Competência";"Juízo"']
+		.concat(
+			Array.from(distribuicoes).map(distribuicao =>
+				Object.values(distribuicao)
+					.map(distValueToString)
+					.join(';'),
+			),
+		)
+		.join('\n'),
+);
