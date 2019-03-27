@@ -7,6 +7,8 @@ export const flatten: <A>(xs: A[][]) => A[] = chain(xs => xs);
 export const mapi = <A, B>(f: (_: A) => (_: number) => B) => (xs: A[]): B[] =>
 	xs.map((x, i) => f(x)(i));
 export const map = <A, B>(f: (_: A) => B): ((xs: A[]) => B[]) => mapi(x => _ => f(x));
+export const ap = <A, B>(fs: ((_: A) => B)[]): ((xs: A[]) => B[]) =>
+	chain(x => map((f: (_: A) => B) => f(x))(fs));
 export const toMapi = <A, K, B>(f: (_: A) => (_: number) => [K, B]) => (xs: A[]): Map<K, B[]> =>
 	xs.reduceRight((map, x, i) => {
 		const [k, v] = f(x)(i);
