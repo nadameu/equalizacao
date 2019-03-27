@@ -18,3 +18,5 @@ export const toMapi = <A, K, B>(f: (_: A) => (_: number) => [K, B]) => (xs: A[])
 export const toMap = <A, K, B>(f: (_: A) => [K, B]): ((xs: A[]) => Map<K, B[]>) =>
 	toMapi(x => _ => f(x));
 export const unique = <A>(xs: A[]): A[] => Array.from(new Set(xs).values());
+export const zipWith = <A, B, C>(f: (_: A) => (_: B) => C) => (xs: A[]) => (ys: B[]): C[] =>
+	Array.from({ length: Math.min(xs.length, ys.length) }, (_, i) => f(xs[i])(ys[i]));
