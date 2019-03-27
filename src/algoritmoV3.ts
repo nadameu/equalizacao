@@ -8,6 +8,7 @@ import { take } from './take';
 import * as A from './Array';
 import { Redistribuicao } from './Redistribuicao';
 import { calcularMedia } from './utils';
+import { K } from './K';
 
 const competencias = [
 	Competencia.CRIMINAL,
@@ -38,20 +39,39 @@ export function* algoritmoV3(
 	const ultimoFoiRedistribuido = juizos.map(() => false);
 	let contadores = juizos.map(() => 0);
 	let mesAtual = '';
-	let distribuidos = juizos.map(() => 0);
+	let distribuidos = competencias.map(() => juizos.map(() => 0));
 	for (const distribuicao of distribuicoes) {
-		if (distribuicao.competencia !== grupo.competencia) continue;
 		if (distribuicao.mes !== mesAtual) {
-			const media = calcularMedia(distribuidos);
-			contadores = A.zipWith((d: number) => (c: number) => Math.round(c + d - media))(distribuidos)(
-				contadores,
-			);
-			distribuidos = juizos.map(() => 0);
+			if (
+				grupo.competencia === Competencia.PREVIDENCIARIA &&
+				grupo.varas.some(vara => vara.competencia === Competencia.UNICA)
+			) {
+				const indiceCivel = competencias.indexOf(Competencia.CIVEL);
+				const indicePrev = competencias.indexOf(Competencia.PREVIDENCIARIA);
+				const distribuidosCiveisK = distribuidos[indiceCivel].map(x => x * K);
+				const distribuidosPrev = distribuidos[indicePrev];
+				const distribuidosK = take(distribuidosCiveisK).return(
+					take(distribuidosPrev).return(A.zipWith(p => c => p + c)),
+				);
+				const media = calcularMedia(distribuidosK);
+				contadores = take(contadores).return(
+					take(distribuidosK).return(A.zipWith(d => c => Math.round(c + d - media))),
+				);
+			} else {
+				const indiceEstaCompetencia = competencias.indexOf(grupo.competencia);
+				const distribuidosEstaCompetencia = distribuidos[indiceEstaCompetencia];
+				const media = calcularMedia(distribuidosEstaCompetencia);
+				contadores = take(contadores).return(
+					take(distribuidosEstaCompetencia).return(A.zipWith(d => c => Math.round(c + d - media))),
+				);
+			}
+			distribuidos = competencias.map(() => juizos.map(() => 0));
 			mesAtual = distribuicao.mes;
 		}
+		const distribuidosCompetencia = distribuidos[competencias.indexOf(distribuicao.competencia)];
 
 		const indiceJuizoOrigem = juizos.findIndex(juizo => juizo.sigla === distribuicao.juizo.sigla);
-		distribuidos[indiceJuizoOrigem]++;
+		distribuidosCompetencia[indiceJuizoOrigem]++;
 		if (indiceJuizoOrigem === -1) continue;
 		let redistribuir = false;
 		if (!ultimoFoiRedistribuido[indiceJuizoOrigem]) {
