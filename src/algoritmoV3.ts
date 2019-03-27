@@ -1,69 +1,78 @@
+import { Ajuizamento } from './Ajuizamento';
+import { Competencia, possui } from './Competencia';
 import { Distribuicao } from './Distribuicao';
-import { Juizo } from './Juizo';
+import { Grupo } from './Grupo';
+import { Juizo, fromVara } from './Juizo';
 import { sortearComPeso } from './sortearComPeso';
-import { calcularMedia, range } from './utils';
+import { take } from './take';
+import * as A from './Array';
+import { Redistribuicao } from './Redistribuicao';
+import { calcularMedia } from './utils';
 
-export function algoritmoV3(juizos: Juizo[], meses: number) {
-	const mandou = juizos.map(() => true);
+const competencias = [
+	Competencia.CRIMINAL,
+	Competencia.EXECUCAO_FISCAL,
+	Competencia.PREVIDENCIARIA,
+	Competencia.CIVEL,
+];
+
+const apCompetencias = competencias.map(competencia => (juizo: Juizo): [Competencia, Juizo] => [
+	competencia,
+	juizo,
+]);
+
+function redistribuicao(distribuicao: Distribuicao, destino: Juizo): Redistribuicao {
+	const { juizo: origem, ...resto } = distribuicao;
+	return { ...resto, origem, destino };
+}
+
+export function* algoritmoV3(
+	distribuicoes: Iterable<Distribuicao>,
+	grupo: Grupo,
+): IterableIterator<Redistribuicao> {
+	const juizos = take(grupo.varas).return(A.chain(fromVara));
+	const juizosPorCompetencia = take(juizos)
+		.apply(A.ap(apCompetencias))
+		.apply(A.filter(([c, j]) => take(j.vara.competencia).return(possui(c))))
+		.return(A.toMap(x => x));
+	const ultimoFoiRedistribuido = juizos.map(() => false);
 	let contadores = juizos.map(() => 0);
-	const distribuicoes: Distribuicao[][] = range(meses).map(mes => {
-		const contadoresOriginal = contadores.slice();
-		const aDistribuir = juizos.map(x => x.definirQtdDistribuicao());
-		const aDistribuirOriginal = aDistribuir.slice();
-		const distribuidos = juizos.map(() => 0);
-		const remetidos = juizos.map(() => 0);
-		const recebidos = juizos.map(() => 0);
-		while (aDistribuir.some(processos => processos > 0)) {
-			const distribuirPara = sortearComPeso(aDistribuir);
-			if (aDistribuir[distribuirPara] === 0) continue; // Não tem mais iniciais
-			let redistribuirPara: null | number = null;
-			if (contadores[distribuirPara] > 0) {
-				// Tem crédito do mês anterior
-				if (mandou[distribuirPara]) {
-					// Última inicial foi redistribuída
-					redistribuirPara = null;
-					mandou[distribuirPara] = false; // Zera para que a próxima possa ser redistribuída
-				} else {
-					// Talvez mandar para outro Juízo
-					try {
-						redistribuirPara = sortearComPeso(contadores.map(x => (x < 0 ? 1 : 0)));
-					} catch (_) {
-						redistribuirPara = null;
-					}
-				}
-			}
-			distribuidos[distribuirPara]++;
-			aDistribuir[distribuirPara]--;
-			if (mes > 3) {
-				if (redistribuirPara !== null) {
-					contadores[distribuirPara]--;
-					remetidos[distribuirPara]++;
-					mandou[distribuirPara] = true;
-					contadores[redistribuirPara]++;
-					recebidos[redistribuirPara]++;
-				}
-			}
+	let mesAtual = '';
+	let distribuidos = juizos.map(() => 0);
+	for (const distribuicao of distribuicoes) {
+		if (distribuicao.competencia !== grupo.competencia) continue;
+		if (distribuicao.mes !== mesAtual) {
+			const media = calcularMedia(distribuidos);
+			contadores = A.zipWith((d: number) => (c: number) => Math.round(c + d - media))(distribuidos)(
+				contadores,
+			);
+			distribuidos = juizos.map(() => 0);
+			mesAtual = distribuicao.mes;
 		}
-		const ajustados = juizos.map((_, i) => distribuidos[i] + recebidos[i] - remetidos[i]);
-		const media = calcularMedia(distribuidos);
-		contadores = contadores.map((contador, i) => contador + Math.round(distribuidos[i] - media));
-		const informacoes = {
-			'contador antes': contadoresOriginal,
-			'a distribuir': aDistribuirOriginal,
-			distribuidos,
-			recebidos,
-			remetidos,
-			ajustados,
-			'contador depois': contadores,
-		};
-		return juizos.map((juizo, i) => ({
-			juizo,
-			...(Object.keys(informacoes).reduce(
-				(acc, key) =>
-					Object.assign(acc, { [key]: informacoes[key as keyof typeof informacoes][i] }),
-				{},
-			) as { [k in keyof typeof informacoes]: (typeof informacoes)[k][number] }),
-		}));
-	});
-	return distribuicoes;
+
+		const indiceJuizoOrigem = juizos.findIndex(juizo => juizo.sigla === distribuicao.juizo.sigla);
+		distribuidos[indiceJuizoOrigem]++;
+		if (indiceJuizoOrigem === -1) continue;
+		let redistribuir = false;
+		if (!ultimoFoiRedistribuido[indiceJuizoOrigem]) {
+			redistribuir = contadores[indiceJuizoOrigem] > 0;
+		}
+		let juizosAptos: Juizo[] = [];
+		if (redistribuir) {
+			juizosAptos = (juizosPorCompetencia.get(distribuicao.competencia) as Juizo[]).filter(
+				juizoCompetente => contadores[juizos.indexOf(juizoCompetente)] < 0,
+			);
+		}
+		if (redistribuir && juizosAptos.length > 0) {
+			const juizo = juizosAptos[sortearComPeso(juizosAptos.map(() => 1))];
+			yield redistribuicao(distribuicao, juizo);
+			contadores[indiceJuizoOrigem]--;
+			const indiceJuizoDestino = juizos.indexOf(juizo);
+			contadores[indiceJuizoDestino]++;
+			ultimoFoiRedistribuido[indiceJuizoOrigem] = true;
+		} else {
+			yield redistribuicao(distribuicao, distribuicao.juizo);
+			ultimoFoiRedistribuido[indiceJuizoOrigem] = false;
+		}
+	}
 }
