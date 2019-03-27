@@ -2,15 +2,13 @@ import * as grupos from '../dados/grupos';
 import * as varas from '../dados/varas';
 import { Ajuizamento } from './Ajuizamento';
 import * as A from './Array';
-import { show as showCompetencia, possui } from './Competencia';
+import { possui, show as showCompetencia } from './Competencia';
 import { Distribuicao } from './Distribuicao';
-import { Juizo } from './Juizo';
+import { fromVara } from './Juizo';
 import { sortearComPeso } from './sortearComPeso';
 import { take } from './take';
 
-const juizos: Juizo[] = take(Object.values(varas)).return(
-	A.chain(vara => take(['F', 'S']).return(A.map(fs => ({ sigla: `${vara.sigla}${fs}`, vara })))),
-);
+const juizos = take(Object.values(varas)).return(A.chain(fromVara));
 const indicesJuizosPorVara = take(juizos).return(A.toMapi(juizo => i => [juizo.vara, i]));
 
 export function* distribuicaoPorSorteio(
