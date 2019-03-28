@@ -30,6 +30,9 @@ export function* algoritmoV3(
 	distribuicoes: Iterable<Distribuicao>,
 	grupo: Grupo,
 ): IterableIterator<Redistribuicao> {
+	const ehGrupoPrevidenciarioComVaraUnica =
+		grupo.competencia === Competencia.PREVIDENCIARIA &&
+		grupo.varas.some(vara => vara.competencia === Competencia.UNICA);
 	const juizos = grupo.varas.do(chain(fromVara));
 	const juizosPorCompetencia = juizos
 		.do(ap(apCompetencias))
@@ -41,10 +44,7 @@ export function* algoritmoV3(
 	let distribuidos = competencias.map(() => juizos.map(() => 0));
 	for (const distribuicao of distribuicoes) {
 		if (distribuicao.mes !== mesAtual) {
-			if (
-				grupo.competencia === Competencia.PREVIDENCIARIA &&
-				grupo.varas.some(vara => vara.competencia === Competencia.UNICA)
-			) {
+			if (ehGrupoPrevidenciarioComVaraUnica) {
 				const indiceCivel = competencias.indexOf(Competencia.CIVEL);
 				const indicePrev = competencias.indexOf(Competencia.PREVIDENCIARIA);
 				const distribuidosCiveisK = distribuidos[indiceCivel].map(x => x * K);
@@ -66,17 +66,21 @@ export function* algoritmoV3(
 		const distribuidosCompetencia = distribuidos[competencias.indexOf(distribuicao.competencia)];
 
 		const indiceJuizoOrigem = juizos.findIndex(juizo => juizo.sigla === distribuicao.juizo.sigla);
-		distribuidosCompetencia[indiceJuizoOrigem]++;
 		if (indiceJuizoOrigem === -1) continue;
+		distribuidosCompetencia[indiceJuizoOrigem]++;
 		let redistribuir = false;
-		if (!ultimoFoiRedistribuido[indiceJuizoOrigem]) {
-			redistribuir = contadores[indiceJuizoOrigem] > 0;
-		}
 		let juizosAptos: Juizo[] = [];
-		if (redistribuir) {
-			juizosAptos = (juizosPorCompetencia.get(distribuicao.competencia) as Juizo[]).filter(
-				juizoCompetente => contadores[juizos.indexOf(juizoCompetente)] < 0,
-			);
+		if (distribuicao.competencia === grupo.competencia) {
+			if (ultimoFoiRedistribuido[indiceJuizoOrigem]) {
+				ultimoFoiRedistribuido[indiceJuizoOrigem] = false;
+			} else {
+				redistribuir = contadores[indiceJuizoOrigem] > 0;
+			}
+			if (redistribuir) {
+				juizosAptos = (juizosPorCompetencia.get(distribuicao.competencia) as Juizo[]).filter(
+					juizoCompetente => contadores[juizos.indexOf(juizoCompetente)] < 0,
+				);
+			}
 		}
 		if (redistribuir && juizosAptos.length > 0) {
 			const juizo = juizosAptos[sortearComPeso(juizosAptos.map(() => 1))];
@@ -87,7 +91,6 @@ export function* algoritmoV3(
 			ultimoFoiRedistribuido[indiceJuizoOrigem] = true;
 		} else {
 			yield redistribuicao(distribuicao, distribuicao.juizo);
-			ultimoFoiRedistribuido[indiceJuizoOrigem] = false;
 		}
 	}
 }
