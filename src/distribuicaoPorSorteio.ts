@@ -38,8 +38,9 @@ export function* distribuicaoPorSorteio(
 		const distribuidosJuizosCompetentes = indicesJuizosCompetentes.map(i => distribuidos[i]);
 		const menor = Math.min(...distribuidosJuizosCompetentes);
 		const segundoMenor = Math.min(menor, ...distribuidosJuizosCompetentes.filter(x => x !== menor));
+		const diferenca = segundoMenor - menor;
 		const pesos = distribuidosJuizosCompetentes.map(x =>
-			x === menor ? segundoMenor - menor + 1 : x === segundoMenor ? 1 : 0,
+			x === menor ? diferenca + 1 : x === segundoMenor ? 1 : 0,
 		);
 		const indiceJuizoSorteado = indicesJuizosCompetentes[sortearComPeso(pesos)];
 		const juizo = juizos[indiceJuizoSorteado];
