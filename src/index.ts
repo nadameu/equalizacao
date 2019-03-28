@@ -1,3 +1,5 @@
+require('./Object');
+
 import * as fs from 'fs';
 import dados from '../dados/distribuicaoreal1718';
 import { I as grupoI } from '../dados/grupos';
@@ -6,7 +8,6 @@ import { fromDados } from './Ajuizamento';
 import { algoritmoV3 } from './algoritmoV3';
 import { show } from './Competencia';
 import { distribuicaoPorSorteio } from './distribuicaoPorSorteio';
-import './Object';
 
 function valueToString(x: string | number | { sigla: string }): string {
 	if (typeof x === 'string') return `"${x}"`;
