@@ -26,60 +26,62 @@ function redistribuicao(distribuicao: Distribuicao, destino: Juizo): Redistribui
 	return { ...resto, origem, destino };
 }
 
-export function* algoritmoV4(
+export const algoritmoV4 = (
 	distribuicoes: Iterable<Distribuicao>,
 	grupo: Grupo,
-): IterableIterator<Redistribuicao> {
-	const ehGrupoPrevidenciarioComVaraUnica =
-		grupo.competencia === Competencia.PREVIDENCIARIA &&
-		grupo.varas.some(vara => vara.competencia === Competencia.UNICA);
-	const juizos = grupo.varas.do(chain(fromVara));
-	const LIMIAR = 64;
-	const juizosPorCompetencia = juizos
-		.do(ap(apCompetencias))
-		.do(filter(([c, j]) => T(j.vara.competencia)(possui(c))))
-		.do(toMap(x => x));
-	const ultimoFoiRedistribuido = juizos.map(() => false);
-	let contadores = juizos.map(() => 0);
-	let mesAtual = '';
-	for (const distribuicao of distribuicoes) {
-		if (distribuicao.mes !== mesAtual) {
-			const minimo = Math.min(...contadores);
-			contadores = contadores.map(x => x - minimo);
-			mesAtual = distribuicao.mes;
-		}
+): Iterable<Redistribuicao> => ({
+	*[Symbol.iterator]() {
+		const ehGrupoPrevidenciarioComVaraUnica =
+			grupo.competencia === Competencia.PREVIDENCIARIA &&
+			grupo.varas.some(vara => vara.competencia === Competencia.UNICA);
+		const juizos = grupo.varas.do(chain(fromVara));
+		const LIMIAR = 64;
+		const juizosPorCompetencia = juizos
+			.do(ap(apCompetencias))
+			.do(filter(([c, j]) => T(j.vara.competencia)(possui(c))))
+			.do(toMap(x => x));
+		const ultimoFoiRedistribuido = juizos.map(() => false);
+		let contadores = juizos.map(() => 0);
+		let mesAtual = '';
+		for (const distribuicao of distribuicoes) {
+			if (distribuicao.mes !== mesAtual) {
+				const minimo = Math.min(...contadores);
+				contadores = contadores.map(x => x - minimo);
+				mesAtual = distribuicao.mes;
+			}
 
-		const indiceJuizoOrigem = juizos.findIndex(juizo => juizo.sigla === distribuicao.juizo.sigla);
-		if (indiceJuizoOrigem === -1) continue;
-		if (ehGrupoPrevidenciarioComVaraUnica && distribuicao.competencia === Competencia.CIVEL) {
-			contadores[indiceJuizoOrigem] += 1.74;
-		} else {
-			contadores[indiceJuizoOrigem]++;
-		}
-		let redistribuir = false;
-		let juizosAptos: Juizo[] = [];
-		if (distribuicao.competencia === grupo.competencia) {
-			if (ultimoFoiRedistribuido[indiceJuizoOrigem]) {
-				ultimoFoiRedistribuido[indiceJuizoOrigem] = false;
+			const indiceJuizoOrigem = juizos.findIndex(juizo => juizo.sigla === distribuicao.juizo.sigla);
+			if (indiceJuizoOrigem === -1) continue;
+			if (ehGrupoPrevidenciarioComVaraUnica && distribuicao.competencia === Competencia.CIVEL) {
+				contadores[indiceJuizoOrigem] += 1.74;
 			} else {
-				redistribuir = contadores[indiceJuizoOrigem] > Math.min(...contadores) + LIMIAR;
+				contadores[indiceJuizoOrigem]++;
 			}
-			if (redistribuir) {
-				juizosAptos = (juizosPorCompetencia.get(distribuicao.competencia) as Juizo[]).filter(
-					juizoCompetente =>
-						contadores[juizos.indexOf(juizoCompetente)] < contadores[indiceJuizoOrigem] - LIMIAR,
-				);
+			let redistribuir = false;
+			let juizosAptos: Juizo[] = [];
+			if (distribuicao.competencia === grupo.competencia) {
+				if (ultimoFoiRedistribuido[indiceJuizoOrigem]) {
+					ultimoFoiRedistribuido[indiceJuizoOrigem] = false;
+				} else {
+					redistribuir = contadores[indiceJuizoOrigem] > Math.min(...contadores) + LIMIAR;
+				}
+				if (redistribuir) {
+					juizosAptos = (juizosPorCompetencia.get(distribuicao.competencia) as Juizo[]).filter(
+						juizoCompetente =>
+							contadores[juizos.indexOf(juizoCompetente)] < contadores[indiceJuizoOrigem] - LIMIAR,
+					);
+				}
+			}
+			if (redistribuir && juizosAptos.length > 0) {
+				const juizo = juizosAptos[sortearComPeso(juizosAptos.map(() => 1))];
+				yield redistribuicao(distribuicao, juizo);
+				contadores[indiceJuizoOrigem]--;
+				const indiceJuizoDestino = juizos.indexOf(juizo);
+				contadores[indiceJuizoDestino]++;
+				ultimoFoiRedistribuido[indiceJuizoOrigem] = true;
+			} else {
+				yield redistribuicao(distribuicao, distribuicao.juizo);
 			}
 		}
-		if (redistribuir && juizosAptos.length > 0) {
-			const juizo = juizosAptos[sortearComPeso(juizosAptos.map(() => 1))];
-			yield redistribuicao(distribuicao, juizo);
-			contadores[indiceJuizoOrigem]--;
-			const indiceJuizoDestino = juizos.indexOf(juizo);
-			contadores[indiceJuizoDestino]++;
-			ultimoFoiRedistribuido[indiceJuizoOrigem] = true;
-		} else {
-			yield redistribuicao(distribuicao, distribuicao.juizo);
-		}
-	}
-}
+	},
+});
