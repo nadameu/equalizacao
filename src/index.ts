@@ -1,4 +1,4 @@
-require('./Object');
+import './Object';
 
 import * as fs from 'fs';
 import dados from '../dados/distribuicaoreal1718';
