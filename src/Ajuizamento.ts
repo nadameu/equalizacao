@@ -1,6 +1,4 @@
-import { chain, toMap, unique } from './Array';
 import { Competencia } from './Competencia';
-import { toEntriesArray } from './Map';
 import { sortearComPeso } from './sortearComPeso';
 import { Subsecao } from './Subsecao';
 
@@ -11,45 +9,53 @@ export interface Ajuizamento {
 	competencia: Competencia;
 }
 
+function formatNumber(num: number, digits: number): string {
+	return String(num).padStart(digits, '0');
+}
+
+interface InfoAjuizamento {
+	siglaSubsecao: string;
+	competencia: Competencia;
+	qtdProcessos: number;
+}
+
 export function* fromDados(
 	dists: [string, string, Competencia, number][],
 	subsecoes: Record<string, Subsecao>,
 ): IterableIterator<Ajuizamento> {
-	const subsecaoCompetencia = dists
-		.do(toMap(([_, siglaSubsecao, competencia]) => [subsecoes[siglaSubsecao], competencia]))
-		.do(toEntriesArray)
-		.do(
-			chain(([subsecao, competencias]) =>
-				unique(competencias).map(competencia => ({ subsecao, competencia })),
-			),
-		);
-	const porMes = dists.reduce((map, [mes, subsecao, competencia, distribuidos]) => {
-		const array = map.get(mes) || Array.from({ length: subsecaoCompetencia.length }, () => 0);
-		const indice = subsecaoCompetencia.findIndex(
-			({ subsecao: s, competencia: c }) => s.sigla === subsecao && c === competencia,
-		);
-		array[indice] = distribuidos;
-		map.set(mes, array);
-		return map;
-	}, new Map<string, number[]>());
-	const seqs = new Map<number, Map<Subsecao, number>>();
-	for (const [mes, dados] of porMes.entries()) {
-		const ano = Number(mes.split('/')[1]);
-		const seqsAno = seqs.get(ano) || new Map<Subsecao, number>();
-		while (dados.some(x => x > 0)) {
-			const indice = sortearComPeso(dados);
-			const { subsecao, competencia } = subsecaoCompetencia[indice];
-			const seq = (seqsAno.get(subsecao) || 0) + 1;
-			yield {
-				numeroProcesso: `5${seq
-					.toString()
-					.padStart(6, '0')}-__.${ano}.4.04.72${subsecao.cod.toString().padStart(2, '0')}`,
-				mes,
-				subsecao,
-				competencia,
-			};
-			seqsAno.set(subsecao, seq);
-			dados[indice]--;
+	const siglas = Array.from(Object.keys(subsecoes));
+	let seq = siglas.map(() => 1);
+	let mesAtual = '';
+	let anoAtual = '';
+	let ajuizar: InfoAjuizamento[] = [];
+	for (const [mes, siglaSubsecao, competencia, qtdProcessos] of dists) {
+		if (mes !== mesAtual) {
+			while (ajuizar.some(({ qtdProcessos }) => qtdProcessos > 0)) {
+				const pesos = ajuizar.map(({ qtdProcessos }) => qtdProcessos);
+				const indiceSorteado = sortearComPeso(pesos);
+				const { siglaSubsecao, competencia, qtdProcessos } = ajuizar[indiceSorteado];
+				const indiceSigla = siglas.indexOf(siglaSubsecao);
+				const seqFormatado = formatNumber(seq[indiceSigla], 6);
+				const ano = mesAtual.split('/')[1];
+				const subsecao = subsecoes[siglaSubsecao];
+				const codSubsecao = formatNumber(subsecao.cod, 2);
+				yield {
+					numeroProcesso: `5${seqFormatado}-XX.${ano}.4.04.72${codSubsecao}`,
+					mes: mesAtual,
+					subsecao,
+					competencia,
+				};
+				seq[indiceSigla]++;
+				ajuizar[indiceSorteado].qtdProcessos--;
+			}
+			mesAtual = mes;
+			ajuizar = [];
+			const ano = mesAtual.split('/')[1];
+			if (ano !== anoAtual) {
+				seq = siglas.map(() => 1);
+				anoAtual = ano;
+			}
 		}
+		ajuizar.push({ siglaSubsecao, competencia, qtdProcessos });
 	}
 }
