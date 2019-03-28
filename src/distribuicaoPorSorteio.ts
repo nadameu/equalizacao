@@ -1,15 +1,14 @@
 import * as grupos from '../dados/grupos';
 import * as varas from '../dados/varas';
 import { Ajuizamento } from './Ajuizamento';
-import * as A from './Array';
+import { alt, chain, filter, toMapi } from './Array';
 import { possui, show as showCompetencia } from './Competencia';
 import { Distribuicao } from './Distribuicao';
 import { fromVara } from './Juizo';
 import { sortearComPeso } from './sortearComPeso';
-import { take } from './take';
 
-const juizos = take(Object.values(varas)).return(A.chain(fromVara));
-const indicesJuizosPorVara = take(juizos).return(A.toMapi(juizo => i => [juizo.vara, i]));
+const juizos = Object.values(varas).do(chain(fromVara));
+const indicesJuizosPorVara = juizos.do(toMapi(juizo => i => [juizo.vara, i]));
 
 export function* distribuicaoPorSorteio(
 	ajuizamentos: Iterable<Ajuizamento>,
@@ -17,14 +16,13 @@ export function* distribuicaoPorSorteio(
 	const distribuidos = juizos.map(() => 0);
 	for (const ajuizamento of ajuizamentos) {
 		const varasSubsecao = Object.values(varas)
-			.filter(({ competencia }) => take(competencia).return(possui(ajuizamento.competencia)))
-			.filter(({ subsecao }) => subsecao === ajuizamento.subsecao);
-		const varasGrupo = take(
-			Object.values(grupos)
-				.filter(({ competencia }) => take(competencia).return(possui(ajuizamento.competencia)))
-				.filter(({ subsecoes }) => subsecoes.includes(ajuizamento.subsecao)),
-		).return(A.chain(grupo => grupo.varas));
-		const varasCompetentes = take(varasSubsecao).return(A.alt(varasGrupo));
+			.do(filter(({ competencia }) => competencia.do(possui(ajuizamento.competencia))))
+			.do(filter(({ subsecao }) => subsecao === ajuizamento.subsecao));
+		const varasGrupo = Object.values(grupos)
+			.do(filter(({ competencia }) => competencia.do(possui(ajuizamento.competencia))))
+			.do(filter(({ subsecoes }) => subsecoes.includes(ajuizamento.subsecao)))
+			.do(chain(grupo => grupo.varas));
+		const varasCompetentes = varasSubsecao.do(alt(varasGrupo));
 
 		if (varasCompetentes.length === 0) {
 			throw new Error(
@@ -34,8 +32,8 @@ export function* distribuicaoPorSorteio(
 			);
 		}
 
-		const indicesJuizosCompetentes = take(varasCompetentes).return(
-			A.chain(vara => indicesJuizosPorVara.get(vara) as number[]),
+		const indicesJuizosCompetentes = varasCompetentes.do(
+			chain(vara => indicesJuizosPorVara.get(vara) as number[]),
 		);
 		const distribuidosJuizosCompetentes = indicesJuizosCompetentes.map(i => distribuidos[i]);
 		const menor = Math.min(...distribuidosJuizosCompetentes);
