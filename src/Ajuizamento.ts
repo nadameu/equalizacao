@@ -55,11 +55,11 @@ export function* fromDados(
 	}
 	for (const ano of Object.keys(anos)
 		.map(Number)
-		.sort()) {
+		.sort((a, b) => a - b)) {
 		const { seq, meses } = anos[ano];
 		for (const mes of Object.keys(meses)
 			.map(Number)
-			.sort()) {
+			.sort((a, b) => a - b)) {
 			const { subsecoesCompetencias, ajuizar } = meses[mes];
 			while (ajuizar.some(x => x > 0)) {
 				const indiceSorteado = sortearComPeso(ajuizar);
