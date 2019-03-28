@@ -9,5 +9,12 @@ export const mapWithKey = <T, U>(
 	return result;
 };
 
-export const map = <T, U>(obj: T, f: (_: T[keyof T]) => U): { [k in keyof T]: U } =>
-	mapWithKey<T, U>(obj, x => f(x as any));
+export const map = <A, B>(f: (_: A) => B) => <T extends Record<any, A>>(
+	obj: T,
+): Record<keyof T, B> => {
+	const result: Record<keyof T, B> = {} as any;
+	for (const [key, value] of Object.entries(obj) as [keyof T, A][]) {
+		result[key] = f(value);
+	}
+	return result;
+};
