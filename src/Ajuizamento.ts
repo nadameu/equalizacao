@@ -1,10 +1,8 @@
+import { chain, toMap, unique } from './Array';
 import { Competencia } from './Competencia';
-import * as ss from '../dados/subsecoes';
+import { toEntriesArray } from './Map';
 import { sortearComPeso } from './sortearComPeso';
 import { Subsecao } from './Subsecao';
-import * as Arr from './Array';
-
-const subsecoes: Record<string, Subsecao> = ss;
 
 export interface Ajuizamento {
 	numeroProcesso: string;
@@ -15,13 +13,14 @@ export interface Ajuizamento {
 
 export function* fromDados(
 	dists: [string, string, Competencia, number][],
+	subsecoes: Record<string, Subsecao>,
 ): IterableIterator<Ajuizamento> {
 	const subsecaoCompetencia = dists
-		.do(Arr.toMap(([_, siglaSubsecao, competencia]) => [subsecoes[siglaSubsecao], competencia]))
-		.do(map => Array.from(map.entries()))
+		.do(toMap(([_, siglaSubsecao, competencia]) => [subsecoes[siglaSubsecao], competencia]))
+		.do(toEntriesArray)
 		.do(
-			Arr.chain(([subsecao, competencias]) =>
-				Arr.unique(competencias).do(Arr.map(competencia => ({ subsecao, competencia }))),
+			chain(([subsecao, competencias]) =>
+				unique(competencias).map(competencia => ({ subsecao, competencia })),
 			),
 		);
 	const porMes = dists.reduce((map, [mes, subsecao, competencia, distribuidos]) => {
