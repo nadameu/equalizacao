@@ -1,14 +1,12 @@
-import { Ajuizamento } from './Ajuizamento';
+import * as Arr from './Array';
 import { Competencia, possui } from './Competencia';
 import { Distribuicao } from './Distribuicao';
 import { Grupo } from './Grupo';
-import { Juizo, fromVara } from './Juizo';
-import { sortearComPeso } from './sortearComPeso';
-import { take } from './take';
-import * as A from './Array';
-import { Redistribuicao } from './Redistribuicao';
-import { calcularMedia } from './utils';
+import { fromVara, Juizo } from './Juizo';
 import { K } from './K';
+import { Redistribuicao } from './Redistribuicao';
+import { sortearComPeso } from './sortearComPeso';
+import { calcularMedia } from './utils';
 
 const competencias = [
 	Competencia.CRIMINAL,
@@ -31,11 +29,11 @@ export function* algoritmoV3(
 	distribuicoes: Iterable<Distribuicao>,
 	grupo: Grupo,
 ): IterableIterator<Redistribuicao> {
-	const juizos = take(grupo.varas).return(A.chain(fromVara));
-	const juizosPorCompetencia = take(juizos)
-		.apply(A.ap(apCompetencias))
-		.apply(A.filter(([c, j]) => take(j.vara.competencia).return(possui(c))))
-		.return(A.toMap(x => x));
+	const juizos = grupo.varas.do(Arr.chain(fromVara));
+	const juizosPorCompetencia = juizos
+		.do(Arr.ap(apCompetencias))
+		.do(Arr.filter(([c, j]) => j.vara.competencia.do(possui(c))))
+		.do(Arr.toMap(x => x));
 	const ultimoFoiRedistribuido = juizos.map(() => false);
 	let contadores = juizos.map(() => 0);
 	let mesAtual = '';
@@ -50,19 +48,19 @@ export function* algoritmoV3(
 				const indicePrev = competencias.indexOf(Competencia.PREVIDENCIARIA);
 				const distribuidosCiveisK = distribuidos[indiceCivel].map(x => x * K);
 				const distribuidosPrev = distribuidos[indicePrev];
-				const distribuidosK = take(distribuidosCiveisK).return(
-					take(distribuidosPrev).return(A.zipWith(p => c => p + c)),
+				const distribuidosK = distribuidosCiveisK.do(
+					distribuidosPrev.do(Arr.zipWith(p => c => p + c)),
 				);
 				const media = calcularMedia(distribuidosK);
-				contadores = take(contadores).return(
-					take(distribuidosK).return(A.zipWith(d => c => Math.round(c + d - media))),
+				contadores = contadores.do(
+					distribuidosK.do(Arr.zipWith(d => c => Math.round(c + d - media))),
 				);
 			} else {
 				const indiceEstaCompetencia = competencias.indexOf(grupo.competencia);
 				const distribuidosEstaCompetencia = distribuidos[indiceEstaCompetencia];
 				const media = calcularMedia(distribuidosEstaCompetencia);
-				contadores = take(contadores).return(
-					take(distribuidosEstaCompetencia).return(A.zipWith(d => c => Math.round(c + d - media))),
+				contadores = contadores.do(
+					distribuidosEstaCompetencia.do(Arr.zipWith(d => c => Math.round(c + d - media))),
 				);
 			}
 			distribuidos = competencias.map(() => juizos.map(() => 0));

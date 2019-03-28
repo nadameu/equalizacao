@@ -1,3 +1,4 @@
+import './Object';
 import * as fs from 'fs';
 import dados from '../dados/distribuicaoreal1718';
 import { I as grupoI } from '../dados/grupos';
