@@ -14,6 +14,12 @@ function formatNumber(num: number, digits: number): string {
 	return String(num).padStart(digits, '0');
 }
 
+function orderedKeys<T extends Record<number, any>>(obj: T): number[] {
+	return Object.keys(obj)
+		.map(Number)
+		.sort((a, b) => a - b);
+}
+
 type State = Record<number, InfoAno>;
 
 interface InfoAno {
@@ -56,13 +62,9 @@ export const fromDados = (
 	return {
 		*[Symbol.iterator]() {
 			const anos = deepClone(state);
-			for (const ano of Object.keys(anos)
-				.map(Number)
-				.sort((a, b) => a - b)) {
+			for (const ano of orderedKeys(anos)) {
 				const { seq, meses } = anos[ano];
-				for (const mes of Object.keys(meses)
-					.map(Number)
-					.sort((a, b) => a - b)) {
+				for (const mes of orderedKeys(meses)) {
 					const { subsecoesCompetencias, ajuizar } = meses[mes];
 					while (ajuizar.some(x => x > 0)) {
 						const indiceSorteado = sortearComPeso(ajuizar);
