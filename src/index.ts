@@ -64,45 +64,48 @@ const resumo: Record<
 	string,
 	Record<'ajuizados' | 'ficaram' | 'remetidos' | 'recebidos' | 'saldo', number>
 > = {};
-for (const { competencia, origem, destino } of redistribuicoes) {
-	const siglaOrigem = origem.vara.sigla;
-	const siglaDestino = destino.vara.sigla;
-	const valorK = competencia === Competencia.CIVEL ? K : 1;
+for (let iter = 1; iter <= 10; iter++) {
+	console.log(`Iteração`, iter);
+	for (const { competencia, origem, destino } of redistribuicoes) {
+		const siglaOrigem = origem.vara.sigla;
+		const siglaDestino = destino.vara.sigla;
+		const valorK = competencia === Competencia.CIVEL ? K : 1;
 
-	// resultado
-	const resOrigem = resultado[siglaOrigem] || (resultado[siglaOrigem] = {});
-	resOrigem[siglaDestino] = (resOrigem[siglaDestino] || 0) + valorK;
+		// resultado
+		const resOrigem = resultado[siglaOrigem] || (resultado[siglaOrigem] = {});
+		resOrigem[siglaDestino] = (resOrigem[siglaDestino] || 0) + valorK;
 
-	const resumoOrigem =
-		resumo[siglaOrigem] ||
-		(resumo[siglaOrigem] = {
-			ajuizados: 0,
-			ficaram: 0,
-			remetidos: 0,
-			recebidos: 0,
-			saldo: 0,
-		});
-	const resumoDestino =
-		resumo[siglaDestino] ||
-		(resumo[siglaDestino] = {
-			ajuizados: 0,
-			ficaram: 0,
-			remetidos: 0,
-			recebidos: 0,
-			saldo: 0,
-		});
+		const resumoOrigem =
+			resumo[siglaOrigem] ||
+			(resumo[siglaOrigem] = {
+				ajuizados: 0,
+				ficaram: 0,
+				remetidos: 0,
+				recebidos: 0,
+				saldo: 0,
+			});
+		const resumoDestino =
+			resumo[siglaDestino] ||
+			(resumo[siglaDestino] = {
+				ajuizados: 0,
+				ficaram: 0,
+				remetidos: 0,
+				recebidos: 0,
+				saldo: 0,
+			});
 
-	resumoOrigem.ajuizados += valorK;
-	if (siglaDestino === siglaOrigem) {
-		resumoOrigem.ficaram += valorK;
-	} else {
-		resumoOrigem.remetidos -= valorK;
-		resumoDestino.recebidos += valorK;
+		resumoOrigem.ajuizados += valorK;
+		if (siglaDestino === siglaOrigem) {
+			resumoOrigem.ficaram += valorK;
+		} else {
+			resumoOrigem.remetidos -= valorK;
+			resumoDestino.recebidos += valorK;
+		}
+		resumoOrigem.saldo = resumoOrigem.ficaram + resumoOrigem.recebidos;
+		resumoDestino.saldo = resumoDestino.ficaram + resumoDestino.recebidos;
 	}
-	resumoOrigem.saldo = resumoOrigem.ficaram + resumoOrigem.recebidos;
-	resumoDestino.saldo = resumoDestino.ficaram + resumoDestino.recebidos;
+	console.log('origem \\ destino');
+	console.table(resultado.do(Obj.map(Obj.map(Math.round))));
+	console.log('resumo');
+	console.table(resumo.do(Obj.map(Obj.map(Math.round))));
 }
-console.log('origem \\ destino');
-console.table(resultado.do(Obj.map(Obj.map(Math.round))));
-console.log('resumo');
-console.table(resumo.do(Obj.map(Obj.map(Math.round))));
