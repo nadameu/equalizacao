@@ -1,18 +1,15 @@
 import './Object';
-import { map as mapObj } from './Obj';
 import * as fs from 'fs';
 import dados from '../dados/distribuicaoreal1718';
 import { I as grupoI } from '../dados/grupos';
 import * as subsecoes from '../dados/subsecoes';
 import { fromDados } from './Ajuizamento';
 import { algoritmoV4 } from './algoritmoV4';
-import { show, Competencia } from './Competencia';
+import { Competencia, show } from './Competencia';
 import { distribuicaoPorSorteio } from './distribuicaoPorSorteio';
-import { toMap } from './Array';
-import { map, toEntriesArray } from './Map';
-import { sum } from './utils';
-import { K } from './K';
+import { K as fatorK } from './K';
 import * as Obj from './Obj';
+import { calcularMedia, sum } from './utils';
 
 function valueToString(x: string | number | { sigla: string }): string {
 	if (typeof x === 'string') return `"${x}"`;
@@ -64,12 +61,17 @@ const resumo: Record<
 	string,
 	Record<'ajuizados' | 'ficaram' | 'remetidos' | 'recebidos' | 'saldo', number>
 > = {};
+const meses = new Set<string>();
 for (let iter = 1; iter <= 10; iter++) {
 	console.log(`Iteração`, iter);
-	for (const { competencia, origem, destino } of redistribuicoes) {
+	for (const { mes, competencia, origem, destino } of redistribuicoes) {
+		if (!meses.has(mes)) {
+			meses.add(mes);
+		}
+
 		const siglaOrigem = origem.vara.sigla;
 		const siglaDestino = destino.vara.sigla;
-		const valorK = competencia === Competencia.CIVEL ? K : 1;
+		const valorK = competencia === Competencia.CIVEL ? fatorK : 1;
 
 		// resultado
 		const resOrigem = resultado[siglaOrigem] || (resultado[siglaOrigem] = {});
@@ -104,8 +106,37 @@ for (let iter = 1; iter <= 10; iter++) {
 		resumoOrigem.saldo = resumoOrigem.ficaram + resumoOrigem.recebidos;
 		resumoDestino.saldo = resumoDestino.ficaram + resumoDestino.recebidos;
 	}
+	const qtdMeses = Array.from(meses.values()).length;
 	console.log('origem \\ destino');
-	console.table(resultado.do(Obj.map(Obj.map(Math.round))));
-	console.log('resumo');
-	console.table(resumo.do(Obj.map(Obj.map(Math.round))));
+	console.table(resultado.do(Obj.map(Obj.map(Math.round))).do(Obj.sortByKey));
+	console.log(`resumo ${iter * qtdMeses} meses`);
+	console.table(resumo.do(Obj.map(Obj.map(Math.round))).do(Obj.sortByKey));
+	const saldos = Object.values(resumo).map(({ saldo }) => saldo / iter / qtdMeses);
+	const menor = Math.min(...saldos);
+	const media = calcularMedia(saldos);
+	const maior = Math.max(...saldos);
+	console.log(
+		`Média: ${media.toLocaleString('pt-BR', {
+			maximumFractionDigits: 1,
+			useGrouping: false,
+		})} ± ${Math.max(maior - media, media - menor).toLocaleString('pt-BR', {
+			maximumFractionDigits: 1,
+			useGrouping: false,
+		})} processos por vara por mês`,
+	);
+	console.log(
+		`Vara com maior distribuição terá ${(maior / menor - 1).toLocaleString('pt-BR', {
+			style: 'percent',
+			maximumFractionDigits: 1,
+		})} mais trabalho que a de menor distribuição`,
+	);
+	const erros = Object.values(resumo)
+		.map(x => x.do(Obj.map(x => x / iter / qtdMeses)))
+		.map(({ recebidos, remetidos }) => Math.min(recebidos, -remetidos));
+	console.log(
+		`Erros: ${sum(erros).toLocaleString('pt-BR', {
+			maximumFractionDigits: 1,
+			useGrouping: false,
+		})} processo(s) por mês que não deveria(m) ser redistribuído(s) no grupo`,
+	);
 }

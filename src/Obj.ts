@@ -18,3 +18,12 @@ export const map = <A, B>(f: (_: A) => B) => <T extends Record<any, A>>(
 	}
 	return result;
 };
+
+export const sortByKey = <T extends Record<string, any>>(obj: T): T =>
+	(Object.keys(obj) as (keyof T)[]).sort().reduce<T>(
+		(acc, key) => {
+			acc[key] = obj[key];
+			return acc;
+		},
+		{} as any,
+	);
