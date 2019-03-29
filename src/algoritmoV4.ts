@@ -35,7 +35,7 @@ export const algoritmoV4 = (
 			grupo.competencia === Competencia.PREVIDENCIARIA &&
 			grupo.varas.some(vara => vara.competencia === Competencia.UNICA);
 		const juizos = grupo.varas.do(chain(fromVara));
-		const LIMIAR = 64;
+		let LIMIAR = Infinity;
 		const juizosPorCompetencia = juizos
 			.do(ap(apCompetencias))
 			.do(filter(([c, j]) => T(j.vara.competencia)(possui(c))))
@@ -45,6 +45,16 @@ export const algoritmoV4 = (
 		let mesAtual = '';
 		for (const distribuicao of distribuicoes) {
 			if (distribuicao.mes !== mesAtual) {
+				if (mesAtual !== '') {
+					const { maior, menor } = contadores.reduce<{ maior: number; menor: number }>(
+						({ maior, menor }, x) => ({
+							maior: x > maior ? x : maior,
+							menor: x < menor ? x : menor,
+						}),
+						{ maior: -Infinity, menor: Infinity },
+					);
+					LIMIAR = Math.max(LIMIAR === Infinity ? 0 : LIMIAR, maior - menor);
+				}
 				const minimo = Math.min(...contadores);
 				contadores = contadores.map(x => x - minimo);
 				mesAtual = distribuicao.mes;
