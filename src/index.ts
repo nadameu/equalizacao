@@ -95,7 +95,7 @@ for (let iter = 1; iter <= 10; iter++) {
 			});
 
 		resumoOrigem.ajuizados += valorK;
-		if (siglaDestino === siglaOrigem) {
+		if (destino.sigla === origem.sigla) {
 			resumoOrigem.ficaram += valorK;
 		} else {
 			resumoOrigem.remetidos -= valorK;
